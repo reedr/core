@@ -24,6 +24,7 @@ PLATFORMS = [
     Platform.SWITCH,
     Platform.SCENE,
     Platform.BINARY_SENSOR,
+    Platform.CLIMATE,
 ]
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ def setup(hass, base_config):
         "switch": [],
         "scene": [],
         "binary_sensor": [],
+        "climate": [],
     }
 
     config = base_config.get(DOMAIN)
@@ -105,6 +107,9 @@ def setup(hass, base_config):
             hass.data[LUTRON_DEVICES]["binary_sensor"].append(
                 (area.name, area.occupancy_group)
             )
+
+    for hvac in hass.data[LUTRON_CONTROLLER].hvacs:
+        hass.data[LUTRON_DEVICES]["climate"].append((hvac.name, hvac))
 
     for platform in PLATFORMS:
         discovery.load_platform(hass, platform, DOMAIN, {}, base_config)
