@@ -24,7 +24,9 @@ async def async_setup_entry(
     bridge = data.bridge
     switch_devices = bridge.get_devices_by_domain(SWITCH_DOMAIN)
     async_add_entities(
-        LutronCasetaLight(switch_device, data) for switch_device in switch_devices
+        LutronCasetaLight(switch_device, data)
+        for switch_device in switch_devices
+        if switch_device["type"] != "KeypadLED"
     )
 
 
