@@ -47,6 +47,7 @@ from .const import (
     CONF_NOISE_PSK,
     CONF_SUBSCRIBE_LOGS,
     CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
+    CONF_TTS_MEDIA_PLAYER_SCRIPT,
     DEFAULT_ALLOW_SERVICE_CALLS,
     DEFAULT_NEW_CONFIG_ALLOW_ALLOW_SERVICE_CALLS,
     DEFAULT_PORT,
@@ -812,6 +813,14 @@ class OptionsFlowHandler(OptionsFlow):
                     ),
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="media_player", multiple=True),
+                ),
+                vol.Required(
+                    CONF_TTS_MEDIA_PLAYER_SCRIPT,
+                    default=self.config_entry.options.get(
+                        CONF_TTS_MEDIA_PLAYER_SCRIPT, ""
+                    ),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=["script"], multiple=False),
                 ),
             }
         )

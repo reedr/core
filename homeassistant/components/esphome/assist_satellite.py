@@ -40,7 +40,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN
+from .const import CONF_TTS_MEDIA_PLAYER_ENTITY_ID, CONF_TTS_MEDIA_PLAYER_SCRIPT, DOMAIN
 from .entity import EsphomeAssistEntity, convert_api_error_ha_error
 from .entry_data import ESPHomeConfigEntry
 from .enum_mapper import EsphomeEnumMapper
@@ -293,7 +293,7 @@ class EsphomeAssistSatellite(
             }
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_TTS_START:
             assert event.data is not None
-            if player := self.config_entry.options.get("tts_media_player_entity_id"):
+            if player := self.config_entry.options.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID):
                 tts_data = {
                     "entity_id": event.data["engine"],
                     "message": event.data["tts_input"],
@@ -312,9 +312,13 @@ class EsphomeAssistSatellite(
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_TTS_END:
             assert event.data is not None
             if self._tts_data:
+                action = self.config_entry.options.get(
+                    CONF_TTS_MEDIA_PLAYER_SCRIPT, "tts.speak"
+                )
+                (domain, service) = action.split(".")
                 self.config_entry.async_create_background_task(
                     self.hass,
-                    self.hass.services.async_call("tts", "speak", self._tts_data),
+                    self.hass.services.async_call(domain, service, self._tts_data),
                     "esphome_tts_speak",
                 )
             elif tts_output := event.data["tts_output"]:
