@@ -33,6 +33,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import AbortFlow
+from homeassistant.helpers import selector
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.service_info.hassio import HassioServiceInfo
@@ -45,6 +46,7 @@ from .const import (
     CONF_DEVICE_NAME,
     CONF_NOISE_PSK,
     CONF_SUBSCRIBE_LOGS,
+    CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
     DEFAULT_ALLOW_SERVICE_CALLS,
     DEFAULT_NEW_CONFIG_ALLOW_ALLOW_SERVICE_CALLS,
     DEFAULT_PORT,
@@ -803,6 +805,14 @@ class OptionsFlowHandler(OptionsFlow):
                     CONF_SUBSCRIBE_LOGS,
                     default=self.config_entry.options.get(CONF_SUBSCRIBE_LOGS, False),
                 ): bool,
+                vol.Required(
+                    CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
+                    default=self.config_entry.options.get(
+                        CONF_TTS_MEDIA_PLAYER_ENTITY_ID, ""
+                    ),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="media_player", multiple=True),
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=data_schema)

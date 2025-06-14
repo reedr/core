@@ -120,6 +120,7 @@ class EsphomeAssistSatellite(
         self._audio_queue: asyncio.Queue[bytes | None] = asyncio.Queue()
         self._tts_streaming_task: asyncio.Task | None = None
         self._udp_server: VoiceAssistantUDPServer | None = None
+        self._tts_data: dict[str, Any] | None = None
 
         # Empty config. Updated when added to HA.
         self._satellite_config = assist_satellite.AssistSatelliteConfiguration(
@@ -292,10 +293,31 @@ class EsphomeAssistSatellite(
             }
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_TTS_START:
             assert event.data is not None
+            if player := self.config_entry.options.get("tts_media_player_entity_id"):
+                tts_data = {
+                    "entity_id": event.data["engine"],
+                    "message": event.data["tts_input"],
+                    "media_player_entity_id": player,
+                }
+                tts_options = {}
+                if event.data["language"]:
+                    tts_data["language"] = event.data["language"]
+                if event.data["voice"]:
+                    tts_options["voice"] = event.data["voice"]
+                    tts_data["options"] = tts_options
+                self._tts_data = tts_data
+            else:
+                self._tts_data = None
             data_to_send = {"text": event.data["tts_input"]}
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_TTS_END:
             assert event.data is not None
-            if tts_output := event.data["tts_output"]:
+            if self._tts_data:
+                self.config_entry.async_create_background_task(
+                    self.hass,
+                    self.hass.services.async_call("tts", "speak", self._tts_data),
+                    "esphome_tts_speak",
+                )
+            elif tts_output := event.data["tts_output"]:
                 path = tts_output["url"]
                 url = async_process_play_media_url(self.hass, path)
                 data_to_send = {"url": url}

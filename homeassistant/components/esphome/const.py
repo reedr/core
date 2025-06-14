@@ -11,6 +11,7 @@ CONF_SUBSCRIBE_LOGS = "subscribe_logs"
 CONF_DEVICE_NAME = "device_name"
 CONF_NOISE_PSK = "noise_psk"
 CONF_BLUETOOTH_MAC_ADDRESS = "bluetooth_mac_address"
+CONF_TTS_MEDIA_PLAYER_ENTITY_ID = "tts_media_player_entity_id"
 
 DEFAULT_ALLOW_SERVICE_CALLS = True
 DEFAULT_NEW_CONFIG_ALLOW_ALLOW_SERVICE_CALLS = False
