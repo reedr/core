@@ -45,6 +45,7 @@ from .const import (
     CONF_ALLOW_SERVICE_CALLS,
     CONF_DEVICE_NAME,
     CONF_NOISE_PSK,
+    CONF_STT_SCRIPT,
     CONF_SUBSCRIBE_LOGS,
     CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
     CONF_TTS_MEDIA_PLAYER_SCRIPT,
@@ -792,6 +793,10 @@ class OptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Handle options flow."""
         if user_input is not None:
+            if not user_input.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID):
+                user_input[CONF_TTS_MEDIA_PLAYER_ENTITY_ID] = ""
+            if not user_input.get(CONF_TTS_MEDIA_PLAYER_SCRIPT):
+                user_input[CONF_TTS_MEDIA_PLAYER_SCRIPT] = ""
             return self.async_create_entry(title="", data=user_input)
 
         data_schema = vol.Schema(
@@ -806,15 +811,23 @@ class OptionsFlowHandler(OptionsFlow):
                     CONF_SUBSCRIBE_LOGS,
                     default=self.config_entry.options.get(CONF_SUBSCRIBE_LOGS, False),
                 ): bool,
-                vol.Required(
+                vol.Optional(
+                    CONF_STT_SCRIPT,
+                    default=self.config_entry.options.get(CONF_STT_SCRIPT, ""),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=["script"], multiple=False),
+                ),
+                vol.Optional(
                     CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
                     default=self.config_entry.options.get(
                         CONF_TTS_MEDIA_PLAYER_ENTITY_ID, ""
                     ),
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="media_player", multiple=True),
+                    selector.EntitySelectorConfig(
+                        domain="media_player", multiple=False
+                    ),
                 ),
-                vol.Required(
+                vol.Optional(
                     CONF_TTS_MEDIA_PLAYER_SCRIPT,
                     default=self.config_entry.options.get(
                         CONF_TTS_MEDIA_PLAYER_SCRIPT, ""

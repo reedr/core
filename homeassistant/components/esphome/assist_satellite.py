@@ -40,7 +40,12 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_TTS_MEDIA_PLAYER_ENTITY_ID, CONF_TTS_MEDIA_PLAYER_SCRIPT, DOMAIN
+from .const import (
+    CONF_STT_SCRIPT,
+    CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
+    CONF_TTS_MEDIA_PLAYER_SCRIPT,
+    DOMAIN,
+)
 from .entity import EsphomeAssistEntity, convert_api_error_ha_error
 from .entry_data import ESPHomeConfigEntry
 from .enum_mapper import EsphomeEnumMapper
@@ -121,6 +126,7 @@ class EsphomeAssistSatellite(
         self._tts_streaming_task: asyncio.Task | None = None
         self._udp_server: VoiceAssistantUDPServer | None = None
         self._tts_data: dict[str, Any] | None = None
+        self._stt_player_volume_level: float | None = None
 
         # Empty config. Updated when added to HA.
         self._satellite_config = assist_satellite.AssistSatelliteConfiguration(
@@ -280,6 +286,25 @@ class EsphomeAssistSatellite(
         data_to_send: dict[str, Any] = {}
         if event_type == VoiceAssistantEventType.VOICE_ASSISTANT_STT_START:
             self._entry_data.async_set_assist_pipeline_state(True)
+            if player := self.config_entry.options.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID):
+                player_entity = self.hass.states.get(player)
+                if player_entity:
+                    self._stt_player_volume_level = player_entity.attributes.get(
+                        "volume_level"
+                    )
+                else:
+                    self._stt_player_volume_level = None
+            if stt_script := self.config_entry.options.get(CONF_STT_SCRIPT):
+                (domain, service) = stt_script.split(".")
+                stt_data = {
+                    "media_player_volume_level": self._stt_player_volume_level,
+                    "media_player_entity_id": player,
+                }
+                self.config_entry.async_create_background_task(
+                    self.hass,
+                    self.hass.services.async_call(domain, service, stt_data),
+                    "esphome_stt_script",
+                )
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_STT_END:
             assert event.data is not None
             data_to_send = {"text": event.data["stt_output"]["text"]}
@@ -298,13 +323,12 @@ class EsphomeAssistSatellite(
                     "entity_id": event.data["engine"],
                     "message": event.data["tts_input"],
                     "media_player_entity_id": player,
+                    "media_player_volume_level": self._stt_player_volume_level,
                 }
-                tts_options = {}
                 if event.data["language"]:
                     tts_data["language"] = event.data["language"]
                 if event.data["voice"]:
-                    tts_options["voice"] = event.data["voice"]
-                    tts_data["options"] = tts_options
+                    tts_data["options"] = {"voice": event.data["voice"]}
                 self._tts_data = tts_data
             else:
                 self._tts_data = None
@@ -312,9 +336,9 @@ class EsphomeAssistSatellite(
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_TTS_END:
             assert event.data is not None
             if self._tts_data:
-                action = self.config_entry.options.get(
-                    CONF_TTS_MEDIA_PLAYER_SCRIPT, "tts.speak"
-                )
+                action = self.config_entry.options.get(CONF_TTS_MEDIA_PLAYER_SCRIPT)
+                if not action:
+                    action = "tts.speak"
                 (domain, service) = action.split(".")
                 self.config_entry.async_create_background_task(
                     self.hass,
