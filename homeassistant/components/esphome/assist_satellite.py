@@ -127,6 +127,7 @@ class EsphomeAssistSatellite(
         self._udp_server: VoiceAssistantUDPServer | None = None
         self._tts_data: dict[str, Any] | None = None
         self._stt_player_volume_level: float | None = None
+        self._stt_script_pending: bool = False
 
         # Empty config. Updated when added to HA.
         self._satellite_config = assist_satellite.AssistSatelliteConfiguration(
@@ -305,6 +306,7 @@ class EsphomeAssistSatellite(
                     self.hass.services.async_call(domain, service, stt_data),
                     "esphome_stt_script",
                 )
+                self._stt_script_pending = True
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_STT_END:
             assert event.data is not None
             data_to_send = {"text": event.data["stt_output"]["text"]}
@@ -336,15 +338,7 @@ class EsphomeAssistSatellite(
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_TTS_END:
             assert event.data is not None
             if self._tts_data:
-                action = self.config_entry.options.get(CONF_TTS_MEDIA_PLAYER_SCRIPT)
-                if not action:
-                    action = "tts.speak"
-                (domain, service) = action.split(".")
-                self.config_entry.async_create_background_task(
-                    self.hass,
-                    self.hass.services.async_call(domain, service, self._tts_data),
-                    "esphome_tts_speak",
-                )
+                self._handle_tts_player_output(self._tts_data)
             elif tts_output := event.data["tts_output"]:
                 path = tts_output["url"]
                 url = async_process_play_media_url(self.hass, path)
@@ -387,6 +381,17 @@ class EsphomeAssistSatellite(
                 url = async_process_play_media_url(self.hass, path)
                 data_to_send = {"url": url}
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_RUN_END:
+            if self._stt_script_pending:
+                self._stt_script_pending = False
+                self._handle_tts_player_output(
+                    {
+                        "media_player_entity_id": self.config_entry.options.get(
+                            CONF_TTS_MEDIA_PLAYER_ENTITY_ID
+                        ),
+                        "media_player_volume_level": self._stt_player_volume_level,
+                        "message": "",
+                    }
+                )
             if self._tts_streaming_task is None:
                 # No TTS
                 self._entry_data.async_set_assist_pipeline_state(False)
@@ -590,6 +595,18 @@ class EsphomeAssistSatellite(
             "esphome_voice_assistant_set_config",
         )
         _LOGGER.debug("Setting active wake word: %s", wake_word_id)
+
+    def _handle_tts_player_output(self, data: dict[str, Any]) -> None:
+        if self.config_entry.options.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID):
+            action = self.config_entry.options.get(CONF_TTS_MEDIA_PLAYER_SCRIPT)
+            if not action:
+                action = "tts.speak"
+            (domain, service) = action.split(".")
+            self.config_entry.async_create_background_task(
+                self.hass,
+                self.hass.services.async_call(domain, service, data),
+                "esphome_tts_speak",
+            )
 
     def _update_tts_format(self) -> None:
         """Update the TTS format from the first media player."""
