@@ -823,9 +823,7 @@ class OptionsFlowHandler(OptionsFlow):
                         CONF_TTS_MEDIA_PLAYER_ENTITY_ID, ""
                     ),
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain="media_player", multiple=False
-                    ),
+                    selector.EntitySelectorConfig(domain="media_player", multiple=True),
                 ),
                 vol.Optional(
                     CONF_TTS_MEDIA_PLAYER_SCRIPT,

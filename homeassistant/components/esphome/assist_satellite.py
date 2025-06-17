@@ -287,19 +287,20 @@ class EsphomeAssistSatellite(
         data_to_send: dict[str, Any] = {}
         if event_type == VoiceAssistantEventType.VOICE_ASSISTANT_STT_START:
             self._entry_data.async_set_assist_pipeline_state(True)
-            if player := self.config_entry.options.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID):
-                player_entity = self.hass.states.get(player)
-                if player_entity:
+            if players := self.config_entry.options.get(
+                CONF_TTS_MEDIA_PLAYER_ENTITY_ID
+            ):
+                if player_entity := self.hass.states.get(players[0]):
                     self._stt_player_volume_level = player_entity.attributes.get(
                         "volume_level"
                     )
-                else:
-                    self._stt_player_volume_level = None
+            else:
+                self._stt_player_volume_level = None
             if stt_script := self.config_entry.options.get(CONF_STT_SCRIPT):
                 (domain, service) = stt_script.split(".")
                 stt_data = {
                     "media_player_volume_level": self._stt_player_volume_level,
-                    "media_player_entity_id": player,
+                    "media_player_entity_id": players,
                 }
                 self.config_entry.async_create_background_task(
                     self.hass,
@@ -320,11 +321,13 @@ class EsphomeAssistSatellite(
             }
         elif event_type == VoiceAssistantEventType.VOICE_ASSISTANT_TTS_START:
             assert event.data is not None
-            if player := self.config_entry.options.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID):
+            if players := self.config_entry.options.get(
+                CONF_TTS_MEDIA_PLAYER_ENTITY_ID
+            ):
                 tts_data = {
                     "entity_id": event.data["engine"],
                     "message": event.data["tts_input"],
-                    "media_player_entity_id": player,
+                    "media_player_entity_id": players,
                     "media_player_volume_level": self._stt_player_volume_level,
                 }
                 if event.data["language"]:
