@@ -28,6 +28,7 @@ async def async_setup_entry(
     switch_devices = bridge.get_devices_by_domain(SWITCH_DOMAIN)
     entities: list[LutronCasetaLight | LutronCasetaSmartAwaySwitch] = [
         LutronCasetaLight(switch_device, data) for switch_device in switch_devices
+	if switch_device["type"] != "KeypadLED"
     ]
 
     if bridge.smart_away_state != "":

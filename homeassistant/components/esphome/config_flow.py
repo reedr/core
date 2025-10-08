@@ -37,7 +37,8 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import AbortFlow, FlowResultType
-from homeassistant.helpers import discovery_flow
+from homeassistant.data_entry_flow import AbortFlow
+from homeassistant.helpers import discovery_flow, selector
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
@@ -51,7 +52,10 @@ from .const import (
     CONF_ALLOW_SERVICE_CALLS,
     CONF_DEVICE_NAME,
     CONF_NOISE_PSK,
+    CONF_STT_SCRIPT,
     CONF_SUBSCRIBE_LOGS,
+    CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
+    CONF_TTS_MEDIA_PLAYER_SCRIPT,
     DEFAULT_ALLOW_SERVICE_CALLS,
     DEFAULT_NEW_CONFIG_ALLOW_ALLOW_SERVICE_CALLS,
     DEFAULT_PORT,
@@ -932,6 +936,10 @@ class OptionsFlowHandler(OptionsFlowWithReload):
     ) -> ConfigFlowResult:
         """Handle options flow."""
         if user_input is not None:
+            if not user_input.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID):
+                user_input[CONF_TTS_MEDIA_PLAYER_ENTITY_ID] = ""
+            if not user_input.get(CONF_TTS_MEDIA_PLAYER_SCRIPT):
+                user_input[CONF_TTS_MEDIA_PLAYER_SCRIPT] = ""
             return self.async_create_entry(title="", data=user_input)
 
         data_schema = vol.Schema(
@@ -946,6 +954,28 @@ class OptionsFlowHandler(OptionsFlowWithReload):
                     CONF_SUBSCRIBE_LOGS,
                     default=self.config_entry.options.get(CONF_SUBSCRIBE_LOGS, False),
                 ): bool,
+                vol.Optional(
+                    CONF_STT_SCRIPT,
+                    default=self.config_entry.options.get(CONF_STT_SCRIPT, ""),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=["script"], multiple=False),
+                ),
+                vol.Optional(
+                    CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
+                    default=self.config_entry.options.get(
+                        CONF_TTS_MEDIA_PLAYER_ENTITY_ID, ""
+                    ),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="media_player", multiple=True),
+                ),
+                vol.Optional(
+                    CONF_TTS_MEDIA_PLAYER_SCRIPT,
+                    default=self.config_entry.options.get(
+                        CONF_TTS_MEDIA_PLAYER_SCRIPT, ""
+                    ),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=["script"], multiple=False),
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=data_schema)
