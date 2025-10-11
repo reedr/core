@@ -10,10 +10,10 @@ from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from . import validate_projector
-from .const import CONF_CONNECTION_TYPE, DOMAIN, HTTP, SERIAL
+from .const import CONF_CONNECTION_TYPE, DOMAIN, HTTP, SERIAL, TCP
 from .exceptions import CannotConnect, PoweredOff
 
-ALLOWED_CONNECTION_TYPE = [HTTP, SERIAL]
+ALLOWED_CONNECTION_TYPE = [HTTP, SERIAL, TCP]
 
 DATA_SCHEMA = vol.Schema(
     {
