@@ -24,7 +24,8 @@
     "connection_type": {
       "options": {
         "http": "HTTP",
-        "serial": "Serial"
+        "serial": "Serial",
+        "tcp": "TCP"
       }
     }
   },
