@@ -20,6 +20,9 @@ CONF_DEVICE_NAME = "device_name"
 CONF_NOISE_PSK = "noise_psk"
 CONF_BLUETOOTH_MAC_ADDRESS = "bluetooth_mac_address"
 CONF_BLUETOOTH_SCANNING_MODE = "bluetooth_scanning_mode"
+CONF_TTS_MEDIA_PLAYER_ENTITY_ID = "tts_media_player_entity_id"
+CONF_TTS_MEDIA_PLAYER_SCRIPT = "tts_media_player_script"
+CONF_STT_SCRIPT = "stt_script"
 
 DEFAULT_ALLOW_SERVICE_CALLS = True
 DEFAULT_NEW_CONFIG_ALLOW_ALLOW_SERVICE_CALLS = False
