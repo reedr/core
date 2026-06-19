@@ -39,7 +39,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import AbortFlow, FlowResultType
-from homeassistant.helpers import discovery_flow
+from homeassistant.helpers import discovery_flow, selector
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 from homeassistant.helpers.selector import (
@@ -59,7 +59,10 @@ from .const import (
     CONF_BLUETOOTH_SCANNING_MODE,
     CONF_DEVICE_NAME,
     CONF_NOISE_PSK,
+    CONF_STT_SCRIPT,
     CONF_SUBSCRIBE_LOGS,
+    CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
+    CONF_TTS_MEDIA_PLAYER_SCRIPT,
     DEFAULT_ALLOW_SERVICE_CALLS,
     DEFAULT_BLUETOOTH_SCANNING_MODE,
     DEFAULT_NEW_CONFIG_ALLOW_ALLOW_SERVICE_CALLS,
@@ -1013,6 +1016,10 @@ class OptionsFlowHandler(OptionsFlowWithReload):
     ) -> ConfigFlowResult:
         """Handle options flow."""
         if user_input is not None:
+            if not user_input.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID):
+                user_input[CONF_TTS_MEDIA_PLAYER_ENTITY_ID] = ""
+            if not user_input.get(CONF_TTS_MEDIA_PLAYER_SCRIPT):
+                user_input[CONF_TTS_MEDIA_PLAYER_SCRIPT] = ""
             return self.async_create_entry(title="", data=user_input)
 
         options = self.config_entry.options
@@ -1027,6 +1034,24 @@ class OptionsFlowHandler(OptionsFlowWithReload):
                 CONF_SUBSCRIBE_LOGS,
                 default=options.get(CONF_SUBSCRIBE_LOGS, False),
             ): bool,
+            vol.Optional(
+                CONF_STT_SCRIPT,
+                default=options.get(CONF_STT_SCRIPT, ""),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["script"], multiple=False),
+            ),
+            vol.Optional(
+                CONF_TTS_MEDIA_PLAYER_ENTITY_ID,
+                default=options.get(CONF_TTS_MEDIA_PLAYER_ENTITY_ID, ""),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="media_player", multiple=True),
+            ),
+            vol.Optional(
+                CONF_TTS_MEDIA_PLAYER_SCRIPT,
+                default=options.get(CONF_TTS_MEDIA_PLAYER_SCRIPT, ""),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["script"], multiple=False),
+            ),
         }
         if _entry_has_bluetooth_scanner(self.config_entry):
             schema[
